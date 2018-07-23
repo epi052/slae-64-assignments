@@ -1,0 +1,6 @@
+create a shell_bind_tcp shellcode
+    - binds to a port
+    - needs a passcode
+    - if passcode is correct, execs shell
+
+remove 0x00 from bind tcp shell discussed (from videos)

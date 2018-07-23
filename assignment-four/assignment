@@ -1,0 +1,2 @@
+- create a custom encoder (insertion encoder is what's shown, be creative)
+- PoC with using execve-stack as the shellcode to encode with your schema and execute

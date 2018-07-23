@@ -1,0 +1,9 @@
+create reverse_tcp_shell shellcode
+    - reverse connects to configured ip and port
+    - needs passcode
+        - connect back
+        - prompt client for password
+        - if password correct, exec shell
+    - if PW correct, exec shell
+
+remove 0x00 from reverse tcp shellcode discussed (videos)

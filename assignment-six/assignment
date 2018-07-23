@@ -1,0 +1,5 @@
+- choose 3 shellcode samples from shell-storm and create polymorphic versions of them to beat pattern matching
+
+- the polymorphic versions cannot be larger than 150% of the existing shellcode
+
+- bonus points for making it shorter than the original

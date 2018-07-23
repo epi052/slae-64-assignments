@@ -1,0 +1,4 @@
+- choose any three shellcode samples created using msfpayload (venom?) for 64bit 
+- use GDB to dissect the functionality of the shellcode
+- document the analysis
+
