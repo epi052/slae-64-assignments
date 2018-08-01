@@ -1,60 +1,43 @@
-"""
-An example of the rolling XOR algorithm is as
-follows. Suppose the message payload is the sequence of bytes “0x11 0x2e 0x54 0x9d”.
-The first byte is left as is in the cipher text.
-The second byte is encrypted by XORing the
-second byte of the original message with the first byte of the cipher text: 0x11 XOR 0x2e
-= 0x3f. This is the second byte of the cipher text. The third byte is encrypted by
-XORing the unencrypted third byte of the original message with the second byte of the
-cipher text: 0x3f XOR 0x54 = 0x6B. Finally, 0x6B, the third byte of the cipher text, is
-XORed with the last byte of the original message. The cipher text is “0x11 0x3f 0x6B
-0xF6”.
-
-Decryption is the opposite of encryption. First, the last byte of the cipher text is
-XORed with the preceding byte of the cipher text: 0xF6 XOR 0x6B = 0x9d. This
-recovers the last byte of the original message. This process is repeated for all the
-remaining bytes in the cipher text except the first byte, which was not encrypted.
-There are a couple of interesting observations about this algorithm. First, in order
-to determine the value of a specific byte in the original message, it is not necessary to
-decrypt the entire message. For example, to determine the original value of the second
-byte, XOR it with the preceding byte: 0x3F XOR 0x11 = 0x2E. It is not necessary to
-decrypt the third and fourth bytes before jumping to this step.
-"""
-
+import sys
+import argparse
 import textwrap
+from pathlib import Path
 
 
-def rolling_xor(data: bytes, decrypt=False) -> bytes:
-    """ Perform a rolling xor encryption scheme on `data`.
+def rolling_xor(shellcode: bytes, decode=False, **kwargs) -> bytes:
+    """ Perform a rolling xor encoding scheme on `shellcode`.
 
-    :param data: bytes object; data to be [en,de]coded
-    :param decrypt: boolean, decrypt previously xor'd data
+    :param shellcode: bytes object; data to be [en,de]coded
+    :param decode: boolean, decrypt previously xor'd data
     :return: bytes object
     """
-    data = bytearray(data)
+    shellcode = bytearray(shellcode)
 
-    if decrypt:
-        data.reverse()
-        cipher_stream = bytearray()
+    if decode:
+        shellcode.reverse()
+        encoded_payload = bytearray()
 
-        for i, byte in enumerate(data):
-            if i == len(data) - 1:
-                cipher_stream.append(data[i])  # last byte doesn't need xor'd
+        for i, byte in enumerate(shellcode):
+            if i == len(shellcode) - 1:
+                encoded_payload.append(shellcode[i])  # last byte doesn't need xor'd
             else:
-                cipher_stream.append(data[i] ^ data[i + 1])
+                encoded_payload.append(shellcode[i] ^ shellcode[i + 1])
 
-        cipher_stream.reverse()
+        encoded_payload.reverse()
     else:
-        cipher_stream = bytearray([data.pop(0)])  # first byte left as is in the ciphertext
-        for i, byte in enumerate(data):
-            cipher_stream.append(byte ^ cipher_stream[i])
-    return bytes(cipher_stream)
+        encoded_payload = bytearray([shellcode.pop(0)])  # first byte left as is in the ciphertext
+
+        for i, byte in enumerate(shellcode):
+            encoded_payload.append(byte ^ encoded_payload[i])
+
+    return bytes(encoded_payload)
 
 
-def print_assembly(shellcode: bytes) -> None:
+def print_assembly(shellcode: bytes, outfile: str, **kwargs) -> None:
     """ Print a complete decoder stub with shellcode ready for assembly and linking.
 
     :param shellcode: bytes object; used as shellcode in the assembly generated
+    :param outfile: where to write the generated assemly, default: stdout
     :return: None
     """
     template = f"""\
@@ -81,16 +64,29 @@ def print_assembly(shellcode: bytes) -> None:
         call decoder
         encoded_shellcode: db {','.join(hex(x) for x in shellcode)}
     """
-    print(textwrap.dedent(template))
+
+    if not outfile:
+        outfile = sys.stdout
+    else:
+        outfile = open(outfile, 'w')
+
+    print(textwrap.dedent(template), file=outfile)
+
+    outfile.close()
 
 
 if __name__ == '__main__':
-    exec_shell_shellcode = (  # execve /bin//sh
-        b"\x48\x31\xc0\x50\x48\x89\xe2\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73"
-        b"\x68\x53\x48\x89\xe7\x50\x57\x48\x89\xe6\x48\x83\xc0\x3b\x0f\x05"
-    )
+    parser = argparse.ArgumentParser()
 
-    encoded_shellcode = rolling_xor(exec_shell_shellcode)
+    parser.add_argument('-f', dest='infile', help='file to encode, expects filetype of data i.e. msfvenom ... -f raw', required=True)
+    parser.add_argument('-o', dest='outfile', help='write assembly to file (default: STDOUT)')
+    parser.add_argument('-d', dest='decode', default=False, action='store_true', help='Decode what is passed via -f or -s')
 
-    print_assembly(encoded_shellcode)
+    args = parser.parse_args()
+
+    shellcode = Path(args.infile).read_bytes()
+
+    encoded_payload = rolling_xor(shellcode, args.decode)
+
+    print_assembly(encoded_payload, args.outfile)
 
