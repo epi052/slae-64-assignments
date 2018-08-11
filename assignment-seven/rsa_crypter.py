@@ -50,7 +50,7 @@ class Shellcode:
         return completed_proc
 
     def load(self, src_type: str = None) -> None:
-        """ Depending on src_type, links, assembles, dumps, and loads shellcode from various sources.
+        """ Depending on src_type; links, assembles, dumps, and loads shellcode from various sources.
 
         Valid source types are
             bin
@@ -137,14 +137,14 @@ class KeyManager:
 
         :param key_size: size of the key used in bits
         """
-        _key: RSA.RsaKey
+        key: RSA.RsaKey
 
-        _key = RSA.generate(key_size)
+        key = RSA.generate(key_size)
 
-        _protection = 'scryptAndAES128-CBC' if self.passphrase else None
+        protection = 'scryptAndAES128-CBC' if self.passphrase else None
 
-        self.privkey = _key.export_key(passphrase=self.passphrase, pkcs=8, protection=_protection)
-        self.pubkey = _key.publickey().export_key()
+        self.privkey = key.export_key(passphrase=self.passphrase, pkcs=8, protection=protection)
+        self.pubkey = key.publickey().export_key()
 
     def save_keys(self, privkey_outfile: str, pubkey_outfile: str) -> None:
         """ Write private and public RSA keys to disk.
